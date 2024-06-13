@@ -1,14 +1,15 @@
 import { NextRequestWithAuth, withAuth } from "next-auth/middleware";
 import { signOut } from "next-auth/react";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 const HOME_PAGE_URL = "/";
 
 export default withAuth(
   async function middleware(request: NextRequestWithAuth) {
-    console.log("request .... ", request.nextauth);
+    // console.log("request .... ", request.nextauth);
     const pathname = request.nextUrl.pathname;
-
+    
     // If the user is logged in, `token` will be an object containing the user's details
     const token = request.nextauth.token;
 
@@ -28,15 +29,42 @@ export default withAuth(
       return NextResponse.redirect(redirectUrl);
     }
    
-    if (request.method === "POST" && pathname === "/api/auth/signout") { // Check for POST request and logout path
-      // User initiated logout, handle server-side sign-out and redirect
+    // if ( pathname === "/signout") { // Check for POST request and logout path
+    //   // User initiated logout, handle server-side sign-out and redirect
+    //   try {
+    //     console.log(cookies().get('next-auth.session-token'))
+    //     // await signOut({ redirect: false }); // Sign out without client-side redirection
+    //     cookies().delete('next-auth.session-token')
+    //     cookies().delete('next-auth.csrf-token')
+    //     cookies().delete('next-auth.callback-url')
+    //     console.log("maikoool",cookies().get('next-auth.session-token'))
+
+    //     return NextResponse.redirect(redirectUrl);
+    //     // Redirect to login page
+    //   } catch (error) {
+    //     console.error("Error signing out:", error);
+    //     // Handle sign-out errors (optional)
+    //   }
+    // }
+
+    if ( request.nextUrl.pathname === "/signout") {
       try {
-        await signOut({ redirect: false }); // Sign out without client-side redirection
-        const redirectUrl = new URL("/login", request.url); // Create redirect URL
-        return NextResponse.redirect(redirectUrl); // Redirect to login page
+        const logoutResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/logout`, {
+          method: "POST",
+        });
+
+        // Handle logout response (optional)
+        if (!logoutResponse.status) {
+          console.error("Error during logout:", await logoutResponse.text());
+          // Handle errors (e.g., display an error message to the user)
+        }
+        console.log(redirectUrl)
+        // Redirect to login page after successful sign-out
+        return NextResponse.redirect(redirectUrl);
+
       } catch (error) {
-        console.error("Error signing out:", error);
-        // Handle sign-out errors (optional)
+        console.error("Error initiating logout:", error);
+        // Handle errors (e.g., display an error message to the user)
       }
     }
 
